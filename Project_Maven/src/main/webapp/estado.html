@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Cadastro estado</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.7/css/materialize.min.css">
+        <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.5/js/materialize.min.js"></script>
+        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+        <script type="text/javascript">
+            function inserir_registo() {
+                var dadosajax = {
+                    uf: $("#estadoNome").val(),
+                    nome: $("#cidadeNome").val()
+                };
+                $.ajax({
+                    url: '/estado',
+                    data: JSON.stringify(dadosajax),
+                    type: 'POST',
+                    contentType: 'application/json',
+                    complete: function (result) {
+                        alert('Cadastrado com sucesso!!');
+                        // console.log(result);
+                        $('#ajax_form').trigger('reset');
+                        buscarDados();
+                    }
+
+                });
+            }
+            function deleta(endereco) {
+                $.ajax({
+                    url: endereco,
+                    type: 'delete',
+                    complete: function (result) {
+                        alert('Registro excluído com sucesso!!');
+                        // console.log(result);
+                        buscarDados();
+                    }
+                });
+            }
+
+            function alteraEstado(endereco) {
+                $('#modalEdit').modal('hide');
+                $.ajax({
+                    url: $(oForm).attr('target'),
+                    dataType: 'json',
+                    method: 'PATCH',
+                    contentType: 'application/json; charset=UTF-8',
+                    data: JSON.stringify({
+                        nome: oForm.nome.value
+                    }),
+                    complete: function (data) {
+                        carregaEstados();
+                    }
+                });
+                        $('#modalEdit').on('show.bs.modal', function (event) {
+                    var button = $(event.relatedTarget);
+                    var oEstado = button.data('info');
+                    var modal = $(this);
+                    modal.find('#uf').val(oEstado.uf);
+                    modal.find('#nome').val(oEstado.nome);
+                    modal.find('#frm_estado_edit').attr('target', oEstado.url);
+                });
+
+
+            }
+
+            $(document).ready(function () {
+                Materialize.updateTextFields();
+                buscarDados();
+            });
+            function buscarDados() {
+                $.getJSON('/estado?page=0&size=1000', {
+                }, function (result) {
+                    var dados = result._embedded.estado;
+                    var table = "<table class='striped'>";
+                    table += "<tr>";
+                    table += "<td> <b>UF:</b> </td>";
+                    table += "<td> <center><b> NOME: </b> </center> </td>";
+                    table += "<td> <center><b>Alterar</b></center> </td>";
+                    table += "<td> <center><b>Excluir</b></center> </td>";
+                    table += "</tr>";
+                    for (var i in dados) {
+                        var linha = "<tr>";
+                        linha += "<td> <center>";
+                        linha += dados[i].uf;
+                        linha += "</center></td>";
+                        linha += "<td> <center>";
+                        linha += dados[i].nome;
+                        var endereco = dados[i]._links.self.href;
+                        //console.log(endereco);
+                        linha += "</center></td>";
+                        linha += "<td><center> <a id='alterar' data-target='#modalEdit' onclick=\"altera('" + endereco + "')\"  class='waves-effect waves-light btn'> Alterar </a></center></td>";
+                        linha += "<td><center> <a id='excluir'  onclick=\"deleta('" + endereco + "')\" class='waves-effect waves-light btn'> Excluir </a></center></td>";
+                        linha += "</tr>";
+                        table += linha;
+                    }
+                    table += "</table>";
+                    $('#tabela').html(table);
+                });
+            }
+
+        </script>
+    </head>
+    <body>
+        <h3>Cadastro de Estados</h3>
+        <div class="row" id="centro">
+            <form class="col s12" id="ajax_form" action="">
+                <div class="row">
+                    <div class="input-field col s8">
+                        <input id="estadoNome" maxlength="2" type="text" class="validate">
+                        <label for="estadoNome">Sigla estado:</label>
+                    </div>
+                    <div class="input-field col s8">
+                        <input id="cidadeNome" type="text" class="validate">
+                        <label for="cidadeNome">Nome da cidade:</label>
+                    </div>
+                </div>
+                <a class="waves-effect waves-light btn" onclick="inserir_registo()">Cadastrar</a>
+            </form>
+            <!-- Modal Structure -->
+            <div id="modal1" class="modal bottom-sheet">
+                <div class="modal-content">
+                    <h4>Modal Header</h4>
+                    <p>A bunch of text</p>
+                </div>
+                <div class="modal-footer">
+                    <a href="#!" class=" modal-action modal-close waves-effect waves-green btn-flat">Agree</a>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="modalEditLabel">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="modalEditLabel">Alterar Estado</h4>
+                    </div>
+                    <div class="modal-body">
+                        <form id="frm_estado_edit" target="#">
+                            <div class="form-group">
+                                <label for="uf">Sigla</label>
+                                <input type="text" class="form-control" id="uf" readonly placeholder="Sigla" maxlength="2">
+                            </div>
+                            <div class="form-group">
+                                <label for="nome">Nome</label>
+                                <input type="text" class="form-control" id="nome" placeholder="Nome" maxlength="30">
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Fechar</button>
+                        <button type="button" class="btn btn-primary" id="alteraEstado">Alterar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="tabela"></div>
+</html>
